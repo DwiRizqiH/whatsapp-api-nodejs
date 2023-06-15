@@ -47,7 +47,7 @@ class makeRetryHandler {
     // getHandler
     async getHandler(message) {
        const msg = this.getMessage(message);
-       clearObseleteMessages();
+       this.clearObseleteMessages();
        return msg;
     }
 }

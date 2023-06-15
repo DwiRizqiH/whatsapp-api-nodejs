@@ -22,6 +22,7 @@ const handler = new makeRetryHandler()
 
 // external map to store retry counts of messages when decryption/encryption fails
 // keep this out of the socket itself, so as to prevent a message decryption/encryption loop across socket restarts
+const NodeCache = require('node-cache')
 const msgRetryCounterCache = new NodeCache()
 
 class WhatsAppInstance {
@@ -468,6 +469,7 @@ class WhatsAppInstance {
             { text: message }
         ).then(function (response) {
             handler.addMessage(response)
+            console.log(handler.getHandler(response.key.id))
         })
         return data
     }
