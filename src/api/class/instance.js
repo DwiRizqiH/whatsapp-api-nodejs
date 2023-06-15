@@ -467,10 +467,8 @@ class WhatsAppInstance {
         const data = await this.instance.sock?.sendMessage(
             this.getWhatsAppId(to),
             { text: message }
-        ).then(function (response) {
-            handler.addMessage(response)
-            console.log(handler.getHandler(response.key.id))
-        })
+        )
+        handler.addMessage(data)
         return data
     }
 
@@ -485,9 +483,8 @@ class WhatsAppInstance {
                 ptt: type === 'audio' ? true : false,
                 fileName: filename ? filename : file.originalname,
             }
-        ).then(function (response) {
-            handler.addMessage(response)
-        })
+        )
+        handler.addMessage(data)
         return data
     }
 
@@ -503,9 +500,8 @@ class WhatsAppInstance {
                 caption: caption,
                 mimetype: mimeType,
             }
-        ).then(function (response) {
-            handler.addMessage(response)
-        })
+        )
+        handler.addMessage(data)
         return data
     }
 
@@ -545,9 +541,8 @@ class WhatsAppInstance {
                 footer: data.footerText ?? '',
                 viewOnce: true,
             }
-        ).then(function (response) {
-            handler.addMessage(response)
-        })
+        )
+        handler.addMessage(result)
         return result
     }
 
@@ -562,9 +557,8 @@ class WhatsAppInstance {
                     contacts: [{ displayName: data.fullName, vcard }],
                 },
             }
-        ).then(function (response) {
-            handler.addMessage(response)
-        })
+        )
+        handler.addMessage(result)
         return result
     }
 
@@ -580,9 +574,8 @@ class WhatsAppInstance {
                 title: data.title,
                 viewOnce: true,
             }
-        ).then(function (response) {
-            handler.addMessage(response)
-        })
+        )
+        handler.addMessage(result)
         return result
     }
 
@@ -601,9 +594,8 @@ class WhatsAppInstance {
                 mimetype: data.mimeType,
                 viewOnce: true,
             }
-        ).then(function (response) {
-            handler.addMessage(response)
-        })
+        )
+        handler.addMessage(result)
         return result
     }
 
