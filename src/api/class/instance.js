@@ -4,6 +4,7 @@ const pino = require('pino')
 const {
     default: makeWASocket,
     DisconnectReason,
+    makeCacheableSignalKeyStore
 } = require('@whiskeysockets/baileys')
 const { unlinkSync } = require('fs')
 const { v4: uuidv4 } = require('uuid')
@@ -16,6 +17,12 @@ const config = require('../../config/config')
 const downloadMessage = require('../helper/downloadMsg')
 const logger = require('pino')()
 const useMongoDBAuthState = require('../helper/mongoAuthState')
+const { makeRetryHandler } = require('./store')
+const handler = new makeRetryHandler()
+
+// external map to store retry counts of messages when decryption/encryption fails
+// keep this out of the socket itself, so as to prevent a message decryption/encryption loop across socket restarts
+const msgRetryCounterCache = new NodeCache()
 
 class WhatsAppInstance {
     socketConfig = {
@@ -24,6 +31,12 @@ class WhatsAppInstance {
         logger: pino({
             level: config.log.level,
         }),
+        getMessage: async (key) => {
+            const msg = handler.getHandler(key.id);
+            console.log("Retrying message", msg, msg?.message?.message);
+            return msg?.message?.message;
+        },
+        msgRetryCounterCache
     }
     key = ''
     authState
@@ -73,7 +86,11 @@ class WhatsAppInstance {
         this.collection = mongoClient.db('whatsapp-api').collection(this.key)
         const { state, saveCreds } = await useMongoDBAuthState(this.collection)
         this.authState = { state: state, saveCreds: saveCreds }
-        this.socketConfig.auth = this.authState.state
+        this.socketConfig.auth = {
+			creds: state.creds,
+			/** caching makes the store faster to send/recv messages */
+			keys: makeCacheableSignalKeyStore(state.keys, logger),
+		},
         this.socketConfig.browser = Object.values(config.browser)
         this.instance.sock = makeWASocket(this.socketConfig)
         this.setHandler()
@@ -449,7 +466,9 @@ class WhatsAppInstance {
         const data = await this.instance.sock?.sendMessage(
             this.getWhatsAppId(to),
             { text: message }
-        )
+        ).then(function (response) {
+            handler.addMessage(response)
+        })
         return data
     }
 
@@ -464,7 +483,9 @@ class WhatsAppInstance {
                 ptt: type === 'audio' ? true : false,
                 fileName: filename ? filename : file.originalname,
             }
-        )
+        ).then(function (response) {
+            handler.addMessage(response)
+        })
         return data
     }
 
@@ -480,7 +501,9 @@ class WhatsAppInstance {
                 caption: caption,
                 mimetype: mimeType,
             }
-        )
+        ).then(function (response) {
+            handler.addMessage(response)
+        })
         return data
     }
 
@@ -520,7 +543,9 @@ class WhatsAppInstance {
                 footer: data.footerText ?? '',
                 viewOnce: true,
             }
-        )
+        ).then(function (response) {
+            handler.addMessage(response)
+        })
         return result
     }
 
@@ -535,7 +560,9 @@ class WhatsAppInstance {
                     contacts: [{ displayName: data.fullName, vcard }],
                 },
             }
-        )
+        ).then(function (response) {
+            handler.addMessage(response)
+        })
         return result
     }
 
@@ -551,7 +578,9 @@ class WhatsAppInstance {
                 title: data.title,
                 viewOnce: true,
             }
-        )
+        ).then(function (response) {
+            handler.addMessage(response)
+        })
         return result
     }
 
@@ -570,7 +599,9 @@ class WhatsAppInstance {
                 mimetype: data.mimeType,
                 viewOnce: true,
             }
-        )
+        ).then(function (response) {
+            handler.addMessage(response)
+        })
         return result
     }
 
