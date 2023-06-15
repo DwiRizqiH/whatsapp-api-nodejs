@@ -33,8 +33,8 @@ class WhatsAppInstance {
         }),
         getMessage: async (key) => {
             const msg = handler.getHandler(key.id);
-            console.log("Retrying message", msg, msg?.message?.message);
-            return msg?.message?.message;
+            console.log("Retrying message", msg, (msg?.message || undefined));
+            return (msg?.message || undefined);
         },
         msgRetryCounterCache
     }
